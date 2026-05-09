@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Consumer {
+  id        String   @id @default(uuid())
+  apiKey    String   @unique
+  secret    String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  policies  Policy[]
+  accessLogs AccessLog[]
+}
+
+model Policy {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  consumerId   String?
+  consumer     Consumer? @relation(fields: [consumerId], references: [id])
+  
+  strategyType StrategyType
+  
+  matchConsumer Boolean @default(false)
+  matchApi      Boolean @default(false)
+  matchUserId   Boolean @default(false)
+  matchIp       Boolean @default(false)
+  matchCustom   Boolean @default(false)
+  
+  apiPattern   String?
+  userIdPattern String?
+  ipPattern    String?
+  customKey    String?
+  
+  enabled      Boolean  @default(true)
+  
+  limit        Int
+  windowSizeMs Int?
+  
+  capacity     Int?
+  refillRatePerMs Float?
+  
+  burst        Int?
+  leakRatePerMs Float?
+  
+  quotaType    QuotaType?
+  quotaLimit   Int?
+  
+  onlyQuota    Boolean @default(false)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model AccessLog {
+  id         String   @id @default(uuid())
+  consumerId String
+  consumer   Consumer @relation(fields: [consumerId], references: [id])
+  api        String
+  userId     String?
+  ip         String?
+  custom     String?
+  allowed    Boolean
+  reason     String?
+  latencyMs  Int
+  weight     Int      @default(1)
+  createdAt  DateTime @default(now())
+
+  @@index([consumerId, createdAt])
+  @@index([createdAt])
+}
+
+enum StrategyType {
+  FIXED_WINDOW
+  SLIDING_WINDOW
+  TOKEN_BUCKET
+  LEAKY_BUCKET
+  MONTHLY_QUOTA
+  DAILY_QUOTA
+}
+
+enum QuotaType {
+  MONTHLY
+  DAILY
+}

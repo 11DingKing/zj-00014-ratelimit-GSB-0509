@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  zj-00014-postgres:
+    container_name: zj-00014-postgres
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev123456
+      POSTGRES_DB: db_zj_00014
+    ports:
+      - "15014:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d db_zj_00014"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  zj-00014-redis:
+    container_name: zj-00014-redis
+    image: redis:7-alpine
+    command: ["redis-server", "--requirepass", "redis123456"]
+    ports:
+      - "14014:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis123456", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    container_name: zj-00014-backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "13014:3000"
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgresql://dev:dev123456@zj-00014-postgres:5432/db_zj_00014
+      REDIS_HOST: zj-00014-redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis123456
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: admin123456
+    volumes:
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+    depends_on:
+      zj-00014-postgres:
+        condition: service_healthy
+      zj-00014-redis:
+        condition: service_healthy
+    command: sh -c "npm run prisma:migrate && npm run prisma:seed && npm run dev"
+
+volumes:
+  postgres_data:
+  redis_data:
