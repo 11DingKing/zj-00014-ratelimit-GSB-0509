@@ -77,6 +77,16 @@ model AccessLog {
   @@index([createdAt])
 }
 
+model Whitelist {
+  id        String   @id @default(uuid())
+  resource  String
+  subject   String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([resource, subject])
+}
+
 enum StrategyType {
   FIXED_WINDOW
   SLIDING_WINDOW
