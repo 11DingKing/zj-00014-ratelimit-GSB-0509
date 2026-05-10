@@ -1,4 +1,4 @@
-import { StrategyType, QuotaType } from '@prisma/client';
+import { StrategyType, QuotaType } from "@prisma/client";
 
 export interface CheckRequest {
   consumer: string;
@@ -66,4 +66,17 @@ export interface UsageResponse {
   consumer: string;
   days: number;
   data: UsageDataPoint[];
+}
+
+export interface WhitelistEntry {
+  id: string;
+  resource: string;
+  subject: string;
+  reason?: string;
+  createdAt: Date;
+}
+
+export interface WhitelistCheckResult {
+  whitelisted: boolean;
+  reason?: string;
 }
