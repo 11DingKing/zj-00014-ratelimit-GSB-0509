@@ -1,12 +1,12 @@
-import Router from '@koa/router';
-import { basicAuth } from '../middleware/auth';
-import { policyManager } from '../services/policyManager';
-import { metricsService } from '../services/metricsService';
-import { resetService } from '../services/resetService';
-import { getPrismaClient } from '../prisma/client';
+import Router from "@koa/router";
+import { basicAuth } from "../middleware/auth";
+import { policyManager } from "../services/policyManager";
+import { metricsService } from "../services/metricsService";
+import { resetService } from "../services/resetService";
+import { getPrismaClient } from "../prisma/client";
 
 const router = new Router({
-  prefix: '/admin'
+  prefix: "/admin",
 });
 
 router.use(basicAuth);
@@ -90,17 +90,17 @@ router.use(basicAuth);
  *       201:
  *         description: 创建成功
  */
-router.get('/policies', async (ctx) => {
+router.get("/policies", async (ctx) => {
   const prisma = getPrismaClient();
   const policies = await prisma.policy.findMany({
     orderBy: {
-      createdAt: 'desc'
-    }
+      createdAt: "desc",
+    },
   });
   ctx.body = policies;
 });
 
-router.post('/policies', async (ctx) => {
+router.post("/policies", async (ctx) => {
   const data = ctx.request.body as any;
   const policy = await policyManager.createPolicy(data);
   ctx.status = 201;
@@ -161,34 +161,146 @@ router.post('/policies', async (ctx) => {
  *       204:
  *         description: 删除成功
  */
-router.get('/policies/:id', async (ctx) => {
+router.get("/policies/:id", async (ctx) => {
   const policy = await policyManager.getPolicyById(ctx.params.id);
   if (!policy) {
     ctx.status = 404;
-    ctx.body = { error: 'Policy not found' };
+    ctx.body = { error: "Policy not found" };
     return;
   }
   ctx.body = policy;
 });
 
-router.put('/policies/:id', async (ctx) => {
+router.put("/policies/:id", async (ctx) => {
   const data = ctx.request.body as any;
   try {
     const policy = await policyManager.updatePolicy(ctx.params.id, data);
     ctx.body = policy;
   } catch (error) {
     ctx.status = 404;
-    ctx.body = { error: 'Policy not found' };
+    ctx.body = { error: "Policy not found" };
   }
 });
 
-router.delete('/policies/:id', async (ctx) => {
+router.delete("/policies/:id", async (ctx) => {
   try {
     await policyManager.deletePolicy(ctx.params.id);
     ctx.status = 204;
   } catch (error) {
     ctx.status = 404;
-    ctx.body = { error: 'Policy not found' };
+    ctx.body = { error: "Policy not found" };
+  }
+});
+
+/**
+ * @swagger
+ * /admin/whitelist:
+ *   get:
+ *     summary: 获取所有白名单
+ *     tags: [白名单管理]
+ *     security:
+ *       - basicAuth: []
+ *     responses:
+ *       200:
+ *         description: 白名单列表
+ *   post:
+ *     summary: 创建白名单
+ *     tags: [白名单管理]
+ *     security:
+ *       - basicAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - resource
+ *               - subject
+ *             properties:
+ *               resource:
+ *                 type: string
+ *                 description: 资源（API路径），支持通配符 *
+ *               subject:
+ *                 type: string
+ *                 description: 主体（消费者ID），支持通配符 *
+ *               reason:
+ *                 type: string
+ *                 description: 原因
+ *     responses:
+ *       201:
+ *         description: 创建成功
+ */
+router.get("/whitelist", async (ctx) => {
+  const whitelists = await policyManager.getWhitelists();
+  ctx.body = whitelists;
+});
+
+router.post("/whitelist", async (ctx) => {
+  const data = ctx.request.body as any;
+  if (!data.resource || !data.subject) {
+    ctx.status = 400;
+    ctx.body = { error: "resource and subject are required" };
+    return;
+  }
+  const whitelist = await policyManager.createWhitelist(data);
+  ctx.status = 201;
+  ctx.body = whitelist;
+});
+
+/**
+ * @swagger
+ * /admin/whitelist/{id}:
+ *   get:
+ *     summary: 获取单个白名单
+ *     tags: [白名单管理]
+ *     security:
+ *       - basicAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: 白名单详情
+ *       404:
+ *         description: 白名单不存在
+ *   delete:
+ *     summary: 删除白名单
+ *     tags: [白名单管理]
+ *     security:
+ *       - basicAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: 删除成功
+ *       404:
+ *         description: 白名单不存在
+ */
+router.get("/whitelist/:id", async (ctx) => {
+  const whitelist = await policyManager.getWhitelistById(ctx.params.id);
+  if (!whitelist) {
+    ctx.status = 404;
+    ctx.body = { error: "Whitelist not found" };
+    return;
+  }
+  ctx.body = whitelist;
+});
+
+router.delete("/whitelist/:id", async (ctx) => {
+  try {
+    await policyManager.deleteWhitelist(ctx.params.id);
+    ctx.status = 204;
+  } catch (error) {
+    ctx.status = 404;
+    ctx.body = { error: "Whitelist not found" };
   }
 });
 
@@ -215,16 +327,16 @@ router.delete('/policies/:id', async (ctx) => {
  *       200:
  *         description: 使用量统计
  */
-router.get('/usage', async (ctx) => {
+router.get("/usage", async (ctx) => {
   const consumer = ctx.query.consumer as string;
-  const days = parseInt(ctx.query.days as string || '7', 10);
-  
+  const days = parseInt((ctx.query.days as string) || "7", 10);
+
   if (!consumer) {
     ctx.status = 400;
-    ctx.body = { error: 'consumer is required' };
+    ctx.body = { error: "consumer is required" };
     return;
   }
-  
+
   const usage = await metricsService.getUsage(consumer, days);
   ctx.body = usage;
 });
@@ -260,9 +372,9 @@ router.get('/usage', async (ctx) => {
  *       200:
  *         description: 重置结果
  */
-router.post('/reset', async (ctx) => {
+router.post("/reset", async (ctx) => {
   const body = ctx.request.body as any;
-  
+
   if (body.key) {
     const success = await resetService.resetKey(body.key);
     ctx.body = { success, key: body.key };
@@ -277,7 +389,7 @@ router.post('/reset', async (ctx) => {
     ctx.body = { count, consumerId: body.consumerId };
   } else {
     ctx.status = 400;
-    ctx.body = { error: 'key, pattern, policyId, or consumerId is required' };
+    ctx.body = { error: "key, pattern, policyId, or consumerId is required" };
   }
 });
 
@@ -312,7 +424,7 @@ router.post('/reset', async (ctx) => {
  *                 rejectedRequests:
  *                   type: integer
  */
-router.get('/metrics', async (ctx) => {
+router.get("/metrics", async (ctx) => {
   const metrics = await metricsService.getMetrics();
   ctx.body = metrics;
 });
