@@ -90,3 +90,15 @@ enum QuotaType {
   MONTHLY
   DAILY
 }
+
+model Whitelist {
+  id        String   @id @default(uuid())
+  resource  String
+  subject   String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@unique([resource, subject])
+  @@index([resource])
+  @@index([subject])
+}

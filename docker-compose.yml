@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   zj-00014-postgres:
@@ -39,8 +39,10 @@ services:
       dockerfile: Dockerfile
     ports:
       - "13014:3000"
+      - "50051:50051"
     environment:
       PORT: 3000
+      GRPC_PORT: 50051
       DATABASE_URL: postgresql://dev:dev123456@zj-00014-postgres:5432/db_zj_00014
       REDIS_HOST: zj-00014-redis
       REDIS_PORT: 6379
