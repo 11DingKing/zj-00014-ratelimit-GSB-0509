@@ -40,10 +40,11 @@ router.get("/api-docs.json", (ctx) => {
 });
 
 router.use("/check", checkRoutes.routes(), checkRoutes.allowedMethods());
-router.use("/", adminRoutes.routes(), adminRoutes.allowedMethods());
 
 app.use(router.routes());
 app.use(router.allowedMethods());
+app.use(adminRoutes.routes());
+app.use(adminRoutes.allowedMethods());
 
 app.use(
   koaSwagger({
